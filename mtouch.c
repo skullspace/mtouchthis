@@ -33,8 +33,9 @@ MODULE_LICENSE("GPL");
  * Definitions & global arrays.
  */
 
-#define MTOUCH_FORMAT_TABLET_STATUS_BIT 0x80
-#define MTOUCH_FORMAT_TABLET_TOUCH_BIT 0x40
+#define MTOUCH_FORMAT_TABLET_STATUS_BIT 0x40
+#define MTOUCH_FORMAT_TABLET_TOUCH_BIT 0x01
+#define MTOUCH_FORMAT_TABLET_MEH_BIT 0x02
 #define MTOUCH_FORMAT_TABLET_LENGTH 5
 #define MTOUCH_RESPONSE_BEGIN_BYTE 0x01
 #define MTOUCH_RESPONSE_END_BYTE 0x0d
@@ -43,13 +44,13 @@ MODULE_LICENSE("GPL");
 #define MTOUCH_MAX_LENGTH 16
 
 #define MTOUCH_MIN_XC 0
-#define MTOUCH_MAX_XC 0x3fff
+#define MTOUCH_MAX_XC 0X3ff
 #define MTOUCH_MIN_YC 0
-#define MTOUCH_MAX_YC 0x3fff
+#define MTOUCH_MAX_YC 0x3ff
 
-#define MTOUCH_GET_XC(data) (((data[2])<<7) | data[1])
-#define MTOUCH_GET_YC(data) (((data[4])<<7) | data[3])
-#define MTOUCH_GET_TOUCHED(data) (MTOUCH_FORMAT_TABLET_TOUCH_BIT & data[0])
+#define MTOUCH_GET_YC(data) (((data[1])<<8) | data[2])
+#define MTOUCH_GET_XC(data) (((data[3])<<8) | data[4])
+#define MTOUCH_GET_TOUCHED(data) (!(MTOUCH_FORMAT_TABLET_TOUCH_BIT & data[0]))
 
 /*
  * Per-touchscreen data.
@@ -69,7 +70,7 @@ static void mtouch_process_format_tablet(struct mtouch *mtouch)
 
 	if (MTOUCH_FORMAT_TABLET_LENGTH == ++mtouch->idx) {
 		input_report_abs(dev, ABS_X, MTOUCH_GET_XC(mtouch->data));
-		input_report_abs(dev, ABS_Y, MTOUCH_MAX_YC - MTOUCH_GET_YC(mtouch->data));
+		input_report_abs(dev, ABS_Y, MTOUCH_GET_YC(mtouch->data));
 		input_report_key(dev, BTN_TOUCH, MTOUCH_GET_TOUCHED(mtouch->data));
 		input_sync(dev);
 
@@ -95,13 +96,16 @@ static irqreturn_t mtouch_interrupt(struct serio *serio,
 
 	mtouch->data[mtouch->idx] = data;
 
-	if (MTOUCH_FORMAT_TABLET_STATUS_BIT & mtouch->data[0])
-		mtouch_process_format_tablet(mtouch);
+	if (MTOUCH_FORMAT_TABLET_STATUS_BIT & mtouch->data[0]){
+	  if(MTOUCH_FORMAT_TABLET_MEH_BIT & mtouch->data[0])
+	    printk(KERN_DEBUG "mtouch.c: cursor location unknown");
+	  else
+	    mtouch_process_format_tablet(mtouch);
+	}
 	else if (MTOUCH_RESPONSE_BEGIN_BYTE == mtouch->data[0])
 		mtouch_process_response(mtouch);
 	else
 		printk(KERN_DEBUG "mtouch.c: unknown/unsynchronized data from device, byte %x\n",mtouch->data[0]);
-
 	return IRQ_HANDLED;
 }
 
