@@ -212,11 +212,13 @@ static struct serio_driver mtouch_drv = {
 
 static int __init mtouch_init(void)
 {
+	printk("<1>Hello world 1.\n");
 	return serio_register_driver(&mtouch_drv);
 }
 
 static void __exit mtouch_exit(void)
 {
+	printk(KERN_ALERT "Goodbye world 1.\n");
 	serio_unregister_driver(&mtouch_drv);
 }
 
