@@ -1,0 +1,22 @@
+instructions for working with mtouch.c
+1. Change code
+2. $ make
+   This requires you have everything in place for building linux kernel
+   modules out of tree... the Makefile does all the magic related to this
+   ... what to do for that and how it all works is documented elsewhere
+3. # rmmod mtouch # (if already inserted)
+4. # insmod mtouch.ko
+5. inputattach -mtouch /dev/ttyS?
+   inputattach will block, run with --daemon if need be
+6. A /dev/input/event? device node is created, X.org picks up automatically
+   no X configuration required
+7. terminate inputattach to start again
+
+instructions for mtouchme.py
+1. Change code
+2. ./mtouchme.py /dev/ttyS?
+Doesn't seem to work unless serial initialization magic has
+been done with a load of mtouch + inputattach above first
+Can't seem to replicate magic with setserial
+You can't run inputattach for the kernel module and mtouchme.py at the
+same time
